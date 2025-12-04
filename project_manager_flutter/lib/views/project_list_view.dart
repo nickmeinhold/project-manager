@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/project.dart';
 import '../services/firebase_service.dart';
+import '../services/auth_service.dart';
 import 'project_detail_view.dart';
 
 class ProjectListView extends StatelessWidget {
   final FirebaseService _firebaseService = FirebaseService();
+  final AuthService _authService = AuthService();
 
   ProjectListView({super.key});
 
@@ -19,6 +21,12 @@ class ProjectListView extends StatelessWidget {
             icon: const Icon(Icons.add),
             onPressed: () {
               // TODO: Show create project form
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await _authService.signOut();
             },
           ),
         ],

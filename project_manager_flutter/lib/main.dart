@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:project_manager_flutter/firebase_options.dart';
 
-import 'views/project_list_view.dart';
+import 'views/auth_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +27,7 @@ class ProjectManagerApp extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
-      home: ProjectListView(),
+      home: const AuthWrapper(),
     );
   }
 }
