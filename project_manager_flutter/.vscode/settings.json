@@ -1,0 +1,52 @@
+{
+  // Dart & Flutter Settings
+  "dart.flutterSdkPath": null,
+  "dart.debugExternalPackageLibraries": false,
+  "dart.debugSdkLibraries": false,
+  "dart.lineLength": 100,
+  "dart.previewFlutterUiGuides": true,
+  "dart.previewFlutterUiGuidesCustomTracking": true,
+
+  // Editor Settings
+  "editor.formatOnSave": true,
+  "editor.formatOnType": true,
+  "editor.rulers": [100],
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  },
+
+  // File Associations
+  "files.associations": {
+    "*.dart": "dart"
+  },
+
+  // File Exclusions (reduce clutter)
+  "files.exclude": {
+    "**/.dart_tool": true,
+    "**/.flutter-plugins": true,
+    "**/.flutter-plugins-dependencies": true,
+    "**/.packages": true,
+    "**/.pub-cache": true,
+    "**/.pub/": true,
+    "**/build/": true
+  },
+
+  // Search Exclusions
+  "search.exclude": {
+    "**/.dart_tool": true,
+    "**/build": true,
+    "**/.pub": true,
+    "**/pubspec.lock": true
+  },
+
+  // Dart Analyzer
+  "dart.analysisExcludedFolders": [
+    ".dart_tool",
+    "build"
+  ],
+
+  // Auto Import Completion
+  "dart.completeFunctionCalls": true,
+  "dart.showTodos": true
+}
