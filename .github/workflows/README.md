@@ -19,19 +19,6 @@ Runs on every push to `main` and on all pull requests.
 - Runs only on pushes to `main` branch
 - Deploys backend functions, web hosting, and Firestore rules to Firebase
 
-### `pr-review.yml` - Claude Code Review
-
-Runs on all pull requests to provide AI-powered code review.
-
-**Reviews:**
-
-- Security vulnerabilities and best practices
-- Code quality and maintainability
-- Performance considerations
-- Error handling
-- Type safety (TypeScript/Dart)
-- Firebase security rules
-
 ## Required Secrets
 
 To use these workflows, configure the following secrets in your GitHub repository settings:
