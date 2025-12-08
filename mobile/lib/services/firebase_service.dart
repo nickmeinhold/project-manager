@@ -37,42 +37,74 @@ class FirebaseService {
     required String description,
     required List<CreateStepInput> steps,
   }) async {
-    final userId = _auth.currentUser?.uid;
+    // Debug: Check authentication state
+    final currentUser = _auth.currentUser;
+    print('🔍 DEBUG: Creating project...');
+    print('🔍 DEBUG: Current user: ${currentUser?.uid}');
+    print('🔍 DEBUG: User email: ${currentUser?.email}');
+    print('🔍 DEBUG: Is anonymous: ${currentUser?.isAnonymous}');
+
+    final userId = currentUser?.uid;
     if (userId == null) {
       throw Exception('User must be authenticated to create a project');
     }
 
-    final batch = _firestore.batch();
-    final now = Timestamp.now();
+    // Debug: Wait for any pending auth state changes
+    await Future.delayed(const Duration(milliseconds: 500));
 
-    final projectRef = _firestore.collection('projects').doc();
-    batch.set(projectRef, {
-      'userId': userId,
-      'title': title,
-      'description': description,
-      'status': ProjectStatus.active.name,
-      'createdAt': now,
-      'updatedAt': now,
-      'currentStepIndex': 0,
-      'totalSteps': steps.length,
-    });
+    // Double-check auth after delay
+    final reCheckedUser = _auth.currentUser;
+    print('🔍 DEBUG: Re-checked user: ${reCheckedUser?.uid}');
 
-    for (int i = 0; i < steps.length; i++) {
-      final stepRef = projectRef.collection('steps').doc();
-      batch.set(stepRef, {
-        'projectId': projectRef.id,
-        'title': steps[i].title,
-        'description': steps[i].description,
-        'status': 'pending',
-        'order': i,
-        'automatable': steps[i].automatable,
-        'automationAttempted': false,
-        'createdAt': now,
-        'updatedAt': now,
-      });
+    if (reCheckedUser?.uid == null) {
+      throw Exception('Authentication lost during project creation');
     }
 
-    await batch.commit();
+    try {
+      final batch = _firestore.batch();
+      final now = Timestamp.now();
+
+      final projectRef = _firestore.collection('projects').doc();
+
+      final projectData = {
+        'userId': userId,
+        'title': title,
+        'description': description,
+        'status': ProjectStatus.active.name,
+        'createdAt': now,
+        'updatedAt': now,
+        'currentStepIndex': 0,
+        'totalSteps': steps.length,
+      };
+
+      print('🔍 DEBUG: Project data: $projectData');
+      print('🔍 DEBUG: Project ID: ${projectRef.id}');
+
+      batch.set(projectRef, projectData);
+
+      for (int i = 0; i < steps.length; i++) {
+        final stepRef = projectRef.collection('steps').doc();
+        batch.set(stepRef, {
+          'projectId': projectRef.id,
+          'title': steps[i].title,
+          'description': steps[i].description,
+          'status': 'pending',
+          'order': i,
+          'automatable': steps[i].automatable,
+          'automationAttempted': false,
+          'createdAt': now,
+          'updatedAt': now,
+        });
+      }
+
+      print('🔍 DEBUG: Committing batch...');
+      await batch.commit();
+      print('✅ DEBUG: Project created successfully!');
+    } catch (e) {
+      print('❌ DEBUG: Error creating project: $e');
+      print('❌ DEBUG: Error type: ${e.runtimeType}');
+      rethrow;
+    }
   }
 
   Future<void> updateStep({

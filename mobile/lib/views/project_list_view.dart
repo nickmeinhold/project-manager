@@ -4,6 +4,7 @@ import '../models/project.dart';
 import '../services/firebase_service.dart';
 import '../services/auth_service.dart';
 import 'project_detail_view.dart';
+import '../screens/create_project_screen.dart';
 
 class ProjectListView extends StatelessWidget {
   final FirebaseService _firebaseService = FirebaseService();
@@ -20,7 +21,12 @@ class ProjectListView extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              // TODO: Show create project form
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CreateProjectScreen(),
+                ),
+              );
             },
           ),
           IconButton(
