@@ -3,12 +3,12 @@ import { getFirestore } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBCFKkc6nRfzfTfW4sH_NHXa8ISd75caKQ",
-  authDomain: "shivy-s-projects.firebaseapp.com",
-  projectId: "shivy-s-projects",
-  storageBucket: "shivy-s-projects.firebasestorage.app",
-  messagingSenderId: "903458002914",
-  appId: "1:903458002914:web:0e23f26e31eadf3d5b4bbb"
+  apiKey: "AIzaSyA30tVSjp3Pzaaf4dRexu9HtZYpcKbefXI",
+  authDomain: "project-manager-9ed58.firebaseapp.com",
+  projectId: "project-manager-9ed58",
+  storageBucket: "project-manager-9ed58.firebasestorage.app",
+  messagingSenderId: "695574562874",
+  appId: "1:695574562874:web:69bc8faaf4809e472a8d03"
 };
 
 // Initialize Firebase

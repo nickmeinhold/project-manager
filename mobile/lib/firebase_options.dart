@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -50,19 +47,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCsBDxliXSigZHinEzI-bEqfiofCLL6Cy4',
-    appId: '1:903458002914:android:7813cb49a2f3466a5b4bbb',
-    messagingSenderId: '903458002914',
-    projectId: 'shivy-s-projects',
-    storageBucket: 'shivy-s-projects.firebasestorage.app',
+    apiKey: 'AIzaSyAoQ50-dSc9AR1giLgb1rjLfqr0me3z078',
+    appId: '1:695574562874:android:f85bd5d5398bc0e72a8d03',
+    messagingSenderId: '695574562874',
+    projectId: 'project-manager-9ed58',
+    storageBucket: 'project-manager-9ed58.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAkBFYRuYwWlwbfUGZ1-QLpV-j_HCvxE30',
-    appId: '1:903458002914:ios:c282cd3a7cab396b5b4bbb',
-    messagingSenderId: '903458002914',
-    projectId: 'shivy-s-projects',
-    storageBucket: 'shivy-s-projects.firebasestorage.app',
+    apiKey: 'AIzaSyBANDHOmutAE-VYPEWUxqccGfI_ZJkCiLo',
+    appId: '1:695574562874:ios:0cfe936d14e201592a8d03',
+    messagingSenderId: '695574562874',
+    projectId: 'project-manager-9ed58',
+    storageBucket: 'project-manager-9ed58.firebasestorage.app',
     iosBundleId: 'com.example.projectManagerFlutter',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyA30tVSjp3Pzaaf4dRexu9HtZYpcKbefXI',
+    appId: '1:695574562874:web:69bc8faaf4809e472a8d03',
+    messagingSenderId: '695574562874',
+    projectId: 'project-manager-9ed58',
+    authDomain: 'project-manager-9ed58.firebaseapp.com',
+    storageBucket: 'project-manager-9ed58.firebasestorage.app',
+  );
+
 }
