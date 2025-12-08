@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/project.dart';
@@ -39,10 +41,10 @@ class FirebaseService {
   }) async {
     // Debug: Check authentication state
     final currentUser = _auth.currentUser;
-    print('🔍 DEBUG: Creating project...');
-    print('🔍 DEBUG: Current user: ${currentUser?.uid}');
-    print('🔍 DEBUG: User email: ${currentUser?.email}');
-    print('🔍 DEBUG: Is anonymous: ${currentUser?.isAnonymous}');
+    developer.log('Creating project...', name: 'FirebaseService');
+    developer.log('Current user: ${currentUser?.uid}', name: 'FirebaseService');
+    developer.log('User email: ${currentUser?.email}', name: 'FirebaseService');
+    developer.log('Is anonymous: ${currentUser?.isAnonymous}', name: 'FirebaseService');
 
     final userId = currentUser?.uid;
     if (userId == null) {
@@ -54,7 +56,7 @@ class FirebaseService {
 
     // Double-check auth after delay
     final reCheckedUser = _auth.currentUser;
-    print('🔍 DEBUG: Re-checked user: ${reCheckedUser?.uid}');
+    developer.log('Re-checked user: ${reCheckedUser?.uid}', name: 'FirebaseService');
 
     if (reCheckedUser?.uid == null) {
       throw Exception('Authentication lost during project creation');
@@ -77,8 +79,8 @@ class FirebaseService {
         'totalSteps': steps.length,
       };
 
-      print('🔍 DEBUG: Project data: $projectData');
-      print('🔍 DEBUG: Project ID: ${projectRef.id}');
+      developer.log('Project data: $projectData', name: 'FirebaseService');
+      developer.log('Project ID: ${projectRef.id}', name: 'FirebaseService');
 
       batch.set(projectRef, projectData);
 
@@ -97,12 +99,12 @@ class FirebaseService {
         });
       }
 
-      print('🔍 DEBUG: Committing batch...');
+      developer.log('Committing batch...', name: 'FirebaseService');
       await batch.commit();
-      print('✅ DEBUG: Project created successfully!');
+      developer.log('Project created successfully!', name: 'FirebaseService');
     } catch (e) {
-      print('❌ DEBUG: Error creating project: $e');
-      print('❌ DEBUG: Error type: ${e.runtimeType}');
+      developer.log('Error creating project: $e', name: 'FirebaseService', error: e);
+      developer.log('Error type: ${e.runtimeType}', name: 'FirebaseService');
       rethrow;
     }
   }
