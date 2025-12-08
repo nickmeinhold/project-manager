@@ -64,7 +64,7 @@ class AuthService {
       case 'user-disabled':
         return 'This account has been disabled.';
       default:
-        return 'An error occurred. Please try again.';
+        return 'Authentication error: ${e.message ?? e.code}';
     }
   }
 }

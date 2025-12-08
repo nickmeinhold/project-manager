@@ -19,6 +19,7 @@ enum ProjectStatus {
 
 class Project {
   final String id;
+  final String userId;
   final String title;
   final String description;
   final ProjectStatus status;
@@ -29,6 +30,7 @@ class Project {
 
   Project({
     required this.id,
+    required this.userId,
     required this.title,
     required this.description,
     required this.status,
@@ -51,6 +53,7 @@ class Project {
     final data = doc.data() as Map<String, dynamic>;
     return Project(
       id: doc.id,
+      userId: data['userId'] ?? '',
       title: data['title'] ?? '',
       description: data['description'] ?? '',
       status: ProjectStatus.values.firstWhere(
@@ -66,6 +69,7 @@ class Project {
 
   Map<String, dynamic> toFirestore() {
     return {
+      'userId': userId,
       'title': title,
       'description': description,
       'status': status.name,

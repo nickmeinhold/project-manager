@@ -32,6 +32,7 @@ enum NotificationType {
 
 class ProjectNotification {
   final String id;
+  final String userId;
   final String projectId;
   final String stepId;
   final String title;
@@ -42,6 +43,7 @@ class ProjectNotification {
 
   ProjectNotification({
     required this.id,
+    required this.userId,
     required this.projectId,
     required this.stepId,
     required this.title,
@@ -55,6 +57,7 @@ class ProjectNotification {
     final data = doc.data() as Map<String, dynamic>;
     return ProjectNotification(
       id: doc.id,
+      userId: data['userId'] ?? '',
       projectId: data['projectId'] ?? '',
       stepId: data['stepId'] ?? '',
       title: data['title'] ?? '',
@@ -67,6 +70,7 @@ class ProjectNotification {
 
   Map<String, dynamic> toFirestore() {
     return {
+      'userId': userId,
       'projectId': projectId,
       'stepId': stepId,
       'title': title,

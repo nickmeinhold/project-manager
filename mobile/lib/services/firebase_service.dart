@@ -1,14 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/project.dart';
 import '../models/step.dart' as model;
 import '../models/notification.dart';
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Stream<List<Project>> getProjects() {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) {
+      return Stream.value([]);
+    }
+
     return _firestore
         .collection('projects')
+        .where('userId', isEqualTo: userId)
         .orderBy('updatedAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => Project.fromFirestore(doc)).toList());
@@ -29,11 +37,17 @@ class FirebaseService {
     required String description,
     required List<CreateStepInput> steps,
   }) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) {
+      throw Exception('User must be authenticated to create a project');
+    }
+
     final batch = _firestore.batch();
     final now = Timestamp.now();
 
     final projectRef = _firestore.collection('projects').doc();
     batch.set(projectRef, {
+      'userId': userId,
       'title': title,
       'description': description,
       'status': ProjectStatus.active.name,
@@ -116,8 +130,14 @@ class FirebaseService {
   }
 
   Stream<List<ProjectNotification>> getNotifications() {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) {
+      return Stream.value([]);
+    }
+
     return _firestore
         .collection('notifications')
+        .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .limit(50)
         .snapshots()
