@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "903458002914",
-    "project_id": "shivy-s-projects",
-    "storage_bucket": "shivy-s-projects.firebasestorage.app"
+    "project_number": "695574562874",
+    "project_id": "project-manager-9ed58",
+    "storage_bucket": "project-manager-9ed58.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:903458002914:android:7813cb49a2f3466a5b4bbb",
+        "mobilesdk_app_id": "1:695574562874:android:f85bd5d5398bc0e72a8d03",
         "android_client_info": {
           "package_name": "com.example.project_manager_flutter"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCsBDxliXSigZHinEzI-bEqfiofCLL6Cy4"
+          "current_key": "AIzaSyAoQ50-dSc9AR1giLgb1rjLfqr0me3z078"
         }
       ],
       "services": {

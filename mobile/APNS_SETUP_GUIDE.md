@@ -14,7 +14,7 @@ Complete guide to configure Apple Push Notifications for your Project Manager iO
 
 ### Step 1: Go to Apple Developer Portal
 
-1. Open your browser and go to: https://developer.apple.com/account
+1. Open your browser and go to: <https://developer.apple.com/account>
 2. Sign in with your Apple ID
 3. Click on **"Certificates, Identifiers & Profiles"**
 
@@ -67,8 +67,8 @@ The file name will be something like: `AuthKey_ABC123DEF4.p8`
 
 ### Step 1: Go to Firebase Console
 
-1. Open: https://console.firebase.google.com/
-2. Select your project: **shivy-s-projects**
+1. Open: <https://console.firebase.google.com/>
+2. Select your project: **project-manager-9ed58**
 3. Click the gear icon ⚙️ → **"Project settings"**
 
 ### Step 2: Add iOS App (if not already added)
@@ -160,36 +160,36 @@ async function sendNotification(
   notification: { title: string; body: string; type: string }
 ) {
   // Save notification to Firestore
-  await db.collection('notifications').add({
+  await db.collection("notifications").add({
     projectId,
     stepId,
     title: notification.title,
     body: notification.body,
     type: notification.type,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    read: false
+    read: false,
   });
 
   // NEW: Send push notification via FCM
   // You need to store user FCM tokens in a 'users' collection
   // For now, we'll get all tokens (in production, target specific users)
 
-  const tokensSnapshot = await db.collection('fcmTokens').get();
+  const tokensSnapshot = await db.collection("fcmTokens").get();
 
-  const tokens = tokensSnapshot.docs.map(doc => doc.data().token);
+  const tokens = tokensSnapshot.docs.map((doc) => doc.data().token);
 
   if (tokens.length > 0) {
     const message = {
       notification: {
         title: notification.title,
-        body: notification.body
+        body: notification.body,
       },
       data: {
         projectId: projectId,
         stepId: stepId,
-        type: notification.type
+        type: notification.type,
       },
-      tokens: tokens // Send to all registered devices
+      tokens: tokens, // Send to all registered devices
     };
 
     try {
@@ -197,7 +197,7 @@ async function sendNotification(
       console.log(`Successfully sent ${response.successCount} notifications`);
       console.log(`Failed to send ${response.failureCount} notifications`);
     } catch (error) {
-      console.error('Error sending notification:', error);
+      console.error("Error sending notification:", error);
     }
   }
 }
@@ -298,6 +298,7 @@ curl -X POST https://fcm.googleapis.com/fcm/send \
 ### Notifications not appearing on device
 
 **Checklist**:
+
 - ✅ Push Notifications capability added in Xcode
 - ✅ Background Modes > Remote notifications enabled
 - ✅ APNs key uploaded to Firebase
@@ -310,6 +311,7 @@ curl -X POST https://fcm.googleapis.com/fcm/send \
 ### "Invalid APNs credentials"
 
 **Solution**:
+
 - Check Key ID and Team ID are correct
 - Ensure the .p8 file is not corrupted
 - Verify the Bundle ID matches
@@ -317,6 +319,7 @@ curl -X POST https://fcm.googleapis.com/fcm/send \
 ### Testing on Simulator
 
 ⚠️ **Simulator Limitations**:
+
 - iOS Simulator CAN receive notifications (iOS 16+)
 - Make sure simulator has internet
 - Check simulator has notification permissions
@@ -343,18 +346,22 @@ Before releasing to production:
 
 ## Quick Reference
 
-### Where to find Key ID and Team ID:
+### Where to find Key ID and Team ID
+
 - **Key ID**: Apple Developer Portal → Certificates, Identifiers & Profiles → Keys → Click your key
 - **Team ID**: Apple Developer Portal → Top right corner (or Membership page)
 
-### Where to find Server Key:
+### Where to find Server Key
+
 - Firebase Console → Project Settings → Cloud Messaging → Server key (under "Project credentials")
 
-### Where to find FCM Token:
+### Where to find FCM Token
+
 - Run your iOS app in Xcode
 - Check console logs for: "FCM registration token: ..."
 
-### Where to upload APNs key:
+### Where to upload APNs key
+
 - Firebase Console → Project Settings → Your iOS App → APNs Authentication Key → Upload
 
 ---
@@ -362,6 +369,7 @@ Before releasing to production:
 ## Next Steps
 
 After setup:
+
 1. Deploy your Firebase Functions: `firebase deploy --only functions`
 2. Test notifications thoroughly
 3. Add user authentication to target specific users
@@ -373,7 +381,7 @@ After setup:
 
 ## Need Help?
 
-- Firebase iOS Setup: https://firebase.google.com/docs/ios/setup
-- FCM iOS Client: https://firebase.google.com/docs/cloud-messaging/ios/client
-- APNs Overview: https://developer.apple.com/documentation/usernotifications
-- Troubleshooting: https://firebase.google.com/docs/cloud-messaging/ios/certs
+- Firebase iOS Setup: <https://firebase.google.com/docs/ios/setup>
+- FCM iOS Client: <https://firebase.google.com/docs/cloud-messaging/ios/client>
+- APNs Overview: <https://developer.apple.com/documentation/usernotifications>
+- Troubleshooting: <https://firebase.google.com/docs/cloud-messaging/ios/certs>

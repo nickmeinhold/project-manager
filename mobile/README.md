@@ -21,7 +21,8 @@ Native iOS app for the Project Manager system with push notifications and real-t
 ## Firebase Setup
 
 The app is already configured to connect to your Firebase project:
-- Project ID: `shivy-s-projects`
+
+- Project ID: `project-manager-9ed58`
 - Configuration file: `GoogleService-Info.plist` (already included)
 
 ## Installation
@@ -38,6 +39,7 @@ open ProjectManager.xcodeproj
 When you open the project in Xcode, it will automatically fetch the Firebase iOS SDK via Swift Package Manager.
 
 If needed, you can manually add Firebase:
+
 1. File → Add Package Dependencies
 2. Enter: `https://github.com/firebase/firebase-ios-sdk`
 3. Select version 10.0.0 or later
@@ -61,15 +63,17 @@ If needed, you can manually add Firebase:
 
 ### 5. Configure Firebase Cloud Messaging
 
-#### Get APNs Authentication Key:
+#### Get APNs Authentication Key
+
 1. Go to [Apple Developer Portal](https://developer.apple.com/account)
 2. Certificates, Identifiers & Profiles → Keys
 3. Create a new key with "Apple Push Notifications service (APNs)" enabled
 4. Download the `.p8` file
 
-#### Upload to Firebase:
+#### Upload to Firebase
+
 1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Select your project: `shivy-s-projects`
+2. Select your project: `project-manager-9ed58`
 3. Project Settings → Cloud Messaging → iOS app configuration
 4. Upload your APNs Authentication Key
 5. Enter your Team ID and Key ID
@@ -77,6 +81,7 @@ If needed, you can manually add Firebase:
 ### 6. Update GoogleService-Info.plist
 
 If you need to download a fresh config file:
+
 1. Firebase Console → Project Settings → Your iOS App
 2. Download `GoogleService-Info.plist`
 3. Replace the existing file in the project
@@ -89,7 +94,7 @@ If you need to download a fresh config file:
 
 ## Project Structure
 
-```
+```sh
 ProjectManager/
 ├── ProjectManagerApp.swift        # App entry point
 ├── AppDelegate.swift              # Push notification setup
@@ -104,7 +109,8 @@ ProjectManager/
 
 ## How Push Notifications Work
 
-### Flow:
+### Flow
+
 1. **App Launch**: Requests notification permission
 2. **FCM Token**: Device receives unique FCM token
 3. **Token Storage**: Token saved to UserDefaults (in production, send to backend)
@@ -112,30 +118,35 @@ ProjectManager/
 5. **APNs**: Firebase sends notification to Apple Push Notification service
 6. **Delivery**: APNs delivers to your device
 
-### Handling Notifications:
+### Handling Notifications
 
-#### Foreground (App Open):
+#### Foreground (App Open)
+
 - Notification appears as banner
 - Handled in `AppDelegate.userNotificationCenter(_:willPresent:)`
 
-#### Background/Closed:
+#### Background/Closed
+
 - Notification appears in notification center
 - Tapping opens app
 - Handled in `AppDelegate.userNotificationCenter(_:didReceive:)`
 
-#### Deep Linking:
+#### Deep Linking
+
 - Notifications include `projectId` in payload
 - App automatically navigates to the project when tapped
 
 ## Testing Notifications
 
 ### Method 1: Complete a Step
+
 1. Open the app and create a project with steps
 2. Close the app or put it in background
 3. Use the web app to complete a step
 4. You should receive a notification
 
 ### Method 2: Firebase Console
+
 1. Go to Firebase Console → Cloud Messaging
 2. Click "Send your first message"
 3. Enter title and body
@@ -196,6 +207,7 @@ The app uses real-time listeners to sync data:
 ## Code Highlights
 
 ### Real-time Updates
+
 ```swift
 firebaseService.fetchProjects()
     .receive(on: DispatchQueue.main)
@@ -205,6 +217,7 @@ firebaseService.fetchProjects()
 ```
 
 ### Update Step Status
+
 ```swift
 try await firebaseService.updateStep(
     projectId: projectId,
@@ -214,6 +227,7 @@ try await firebaseService.updateStep(
 ```
 
 ### Handle Notification Tap
+
 ```swift
 if let projectId = userInfo["projectId"] as? String {
     // Navigate to project
@@ -228,13 +242,16 @@ if let projectId = userInfo["projectId"] as? String {
 ## Next Steps
 
 ### iOS Reminders Integration
+
 To sync with iOS Reminders (EventKit):
+
 1. Add EventKit framework
 2. Request calendar/reminders permission
 3. Create bidirectional sync between Reminders and Firestore
-4. See EventKit documentation: https://developer.apple.com/documentation/eventkit
+4. See EventKit documentation: <https://developer.apple.com/documentation/eventkit>
 
 ### Additional Features
+
 - [ ] Create projects from iOS app
 - [ ] Add EventKit/Reminders integration
 - [ ] Notification settings/preferences
@@ -259,7 +276,7 @@ Before releasing to production:
 
 ## Support
 
-- Firebase iOS SDK: https://firebase.google.com/docs/ios/setup
-- SwiftUI: https://developer.apple.com/documentation/swiftui
-- Push Notifications: https://developer.apple.com/documentation/usernotifications
-- EventKit: https://developer.apple.com/documentation/eventkit
+- Firebase iOS SDK: <https://firebase.google.com/docs/ios/setup>
+- SwiftUI: <https://developer.apple.com/documentation/swiftui>
+- Push Notifications: <https://developer.apple.com/documentation/usernotifications>
+- EventKit: <https://developer.apple.com/documentation/eventkit>
