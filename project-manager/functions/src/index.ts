@@ -5,6 +5,21 @@ admin.initializeApp();
 
 const db = admin.firestore();
 
+// Step data interface
+interface StepData {
+  id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  order: number;
+  automatable: boolean;
+  automationAttempted?: boolean;
+  automationResult?: string;
+  createdAt?: admin.firestore.Timestamp;
+  updatedAt?: admin.firestore.Timestamp;
+  completedAt?: admin.firestore.Timestamp;
+}
+
 // Trigger when a step is updated
 export const onStepUpdate = functions.firestore
   .document('projects/{projectId}/steps/{stepId}')
@@ -146,7 +161,10 @@ async function handleStepCompletion(projectId: string, stepId: string, stepData:
     .orderBy('order', 'asc')
     .get();
 
-  const steps = stepsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const steps = stepsSnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  } as StepData));
   const currentStepIndex = steps.findIndex(s => s.id === stepId);
   const completedStepsCount = steps.filter(s => s.status === 'completed').length;
 

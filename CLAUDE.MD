@@ -3,6 +3,7 @@
 ## Project Overview
 
 An intelligent project management system that:
+
 - Allows easy task creation and updates via iOS Reminders or React web interface
 - Tracks detailed progress for each step in a project
 - Uses AI/automation to complete tasks when possible
@@ -12,15 +13,18 @@ An intelligent project management system that:
 ## Tech Stack
 
 **Backend:**
+
 - Firebase Firestore (database)
 - Firebase Functions (event-driven automation)
 - Firebase Cloud Messaging (push notifications)
 
 **Frontend:**
+
 - React Web App
 - iOS Reminders (via EventKit integration)
 
 **AI/Automation:**
+
 - AI Agent for task execution
 - Integration APIs for automated task completion
 
