@@ -1,5 +1,8 @@
 import * as admin from "firebase-admin";
-import * as functions from "firebase-functions";
+import {
+  onDocumentCreated,
+  onDocumentUpdated,
+} from "firebase-functions/v2/firestore";
 
 admin.initializeApp();
 
@@ -33,12 +36,20 @@ interface StepData {
 }
 
 // Trigger when a step is updated
-export const onStepUpdate = functions.firestore
-  .document("projects/{projectId}/steps/{stepId}")
-  .onUpdate(async (change, context) => {
-    const { projectId, stepId } = context.params;
-    const before = change.before.data();
-    const after = change.after.data();
+export const onStepUpdate = onDocumentUpdated(
+  {
+    document: "projects/{projectId}/steps/{stepId}",
+    database: "default",
+  },
+  async (event) => {
+    const { projectId, stepId } = event.params;
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+
+    if (!before || !after) {
+      console.error("Missing document data");
+      return;
+    }
 
     // Get the project to retrieve userId
     const projectDoc = await db.collection("projects").doc(projectId).get();
@@ -46,7 +57,7 @@ export const onStepUpdate = functions.firestore
 
     if (!projectData) {
       console.error(`Project ${projectId} not found`);
-      return null;
+      return;
     }
 
     // Check if step was just marked as pending or in_progress and is automatable
@@ -65,16 +76,23 @@ export const onStepUpdate = functions.firestore
     if (before.status !== "completed" && after.status === "completed") {
       await handleStepCompletion(projectId, stepId, after, projectData.userId);
     }
-
-    return null;
-  });
+  }
+);
 
 // Trigger when a step is created
-export const onStepCreate = functions.firestore
-  .document("projects/{projectId}/steps/{stepId}")
-  .onCreate(async (snap, context) => {
-    const { projectId, stepId } = context.params;
-    const stepData = snap.data();
+export const onStepCreate = onDocumentCreated(
+  {
+    document: "projects/{projectId}/steps/{stepId}",
+    database: "default",
+  },
+  async (event) => {
+    const { projectId, stepId } = event.params;
+    const stepData = event.data?.data();
+
+    if (!stepData) {
+      console.error("Missing document data");
+      return;
+    }
 
     // Get the project to retrieve userId
     const projectDoc = await db.collection("projects").doc(projectId).get();
@@ -82,7 +100,7 @@ export const onStepCreate = functions.firestore
 
     if (!projectData) {
       console.error(`Project ${projectId} not found`);
-      return null;
+      return;
     }
 
     // If this is the first step and it's automatable, try automation
@@ -102,15 +120,14 @@ export const onStepCreate = functions.firestore
         console.error("Automation error:", error);
       }
     }
-
-    return null;
-  });
+  }
+);
 
 // Attempt to automate a step
 async function attemptAutomation(
   projectId: string,
   stepId: string,
-  stepData: any,
+  stepData: admin.firestore.DocumentData,
   userId: string
 ) {
   console.log(
@@ -176,7 +193,7 @@ async function attemptAutomation(
 
 // Simulate automation logic (replace with actual AI/automation)
 async function simulateAutomation(
-  stepData: any
+  stepData: admin.firestore.DocumentData
 ): Promise<{ success: boolean; result: string }> {
   // This is a placeholder. In a real implementation, you would:
   // - Use AI to understand the task
@@ -184,7 +201,7 @@ async function simulateAutomation(
   // - Execute automation workflows
 
   // For demo purposes, let's say steps with "simple" in description can be automated
-  if (stepData.description.toLowerCase().includes("simple")) {
+  if (stepData.description?.toLowerCase().includes("simple")) {
     return {
       success: true,
       result: "Task was automatically completed successfully.",
@@ -201,7 +218,7 @@ async function simulateAutomation(
 async function handleStepCompletion(
   projectId: string,
   stepId: string,
-  stepData: any,
+  stepData: admin.firestore.DocumentData,
   userId: string
 ) {
   console.log(`Step ${stepId} completed in project ${projectId}`);
