@@ -211,6 +211,7 @@ class MessagingService {
         title: notification.title ?? 'Notification',
         body: notification.body ?? '',
         payload: message.data.toString(),
+        messageId: message.messageId,
       );
     }
   }
@@ -220,6 +221,7 @@ class MessagingService {
     required String title,
     required String body,
     String? payload,
+    String? messageId,
   }) async {
     const androidDetails = AndroidNotificationDetails(
       'high_importance_channel',
@@ -241,8 +243,12 @@ class MessagingService {
       iOS: iosDetails,
     );
 
+    // Use message ID hash for unique notification ID, fallback to timestamp
+    final notificationId = messageId?.hashCode ?? 
+        DateTime.now().millisecondsSinceEpoch % 2147483647;
+
     await _localNotifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      notificationId,
       title,
       body,
       details,
