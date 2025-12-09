@@ -8,12 +8,13 @@ import {
   getDoc,
   query,
   orderBy,
+  where,
   Timestamp,
   onSnapshot,
   QuerySnapshot,
   DocumentData
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, getCurrentUser } from './firebase';
 import { Project, Step, CreateProjectInput, UpdateStepInput } from '../types';
 
 const PROJECTS_COLLECTION = 'projects';
@@ -21,7 +22,11 @@ const STEPS_SUBCOLLECTION = 'steps';
 
 // Projects
 export const createProject = async (input: CreateProjectInput): Promise<string> => {
+  const user = getCurrentUser();
+  if (!user) throw new Error('User must be authenticated');
+
   const projectData = {
+    userId: user.uid,
     title: input.title,
     description: input.description,
     status: 'active',
@@ -122,7 +127,18 @@ export const updateStep = async (
 
 // Real-time listeners
 export const subscribeToProjects = (callback: (projects: Project[]) => void) => {
-  const q = query(collection(db, PROJECTS_COLLECTION), orderBy('createdAt', 'desc'));
+  const user = getCurrentUser();
+  if (!user) {
+    console.error('User must be authenticated to subscribe to projects');
+    callback([]);
+    return () => {};
+  }
+
+  const q = query(
+    collection(db, PROJECTS_COLLECTION),
+    where('userId', '==', user.uid),
+    orderBy('updatedAt', 'desc')
+  );
 
   return onSnapshot(
     q,

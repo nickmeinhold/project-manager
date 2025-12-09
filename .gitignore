@@ -19,3 +19,6 @@ build/
 # Logs
 *.log
 npm-debug.log*
+
+# Test credentials
+TEST_CREDENTIALS.md
