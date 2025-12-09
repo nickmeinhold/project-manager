@@ -10,8 +10,8 @@ class SignInView extends StatefulWidget {
 
 class _SignInViewState extends State<SignInView> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'test1@example.com');
-  final _passwordController = TextEditingController(text: 'test123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _authService = AuthService();
 
   bool _isLoading = false;
