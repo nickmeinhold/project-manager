@@ -8,6 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:project_manager_flutter/firebase_options.dart';
 
 /// Handles Firebase Cloud Messaging for push notifications
 class MessagingService {
@@ -323,10 +324,11 @@ class MessagingService {
 /// Background message handler - must be a top-level function
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Initialize Firebase for this isolate
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   developer.log(
     'Background message received: ${message.notification?.title}',
     name: 'MessagingService',
   );
-  // Handle background message if needed
-  // Note: This runs in a separate isolate, so you can't access app state
 }
