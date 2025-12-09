@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:io';
 
@@ -24,6 +25,7 @@ class MessagingService {
       FlutterLocalNotificationsPlugin();
 
   String? _currentToken;
+  StreamSubscription<User?>? _authSubscription;
 
   /// Initialize messaging and request permissions
   Future<void> initialize() async {
@@ -46,11 +48,14 @@ class MessagingService {
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
-        // Get and store FCM token
-        await _getAndStoreToken();
+        // Get FCM token (but don't store yet - wait for auth)
+        await _getToken();
 
         // Listen for token refresh
         _messaging.onTokenRefresh.listen(_onTokenRefresh);
+
+        // Listen for auth state changes to handle token storage/deletion
+        _authSubscription = _auth.authStateChanges().listen(_onAuthStateChanged);
 
         // Configure foreground message handling
         FirebaseMessaging.onMessage.listen(_onForegroundMessage);
@@ -116,14 +121,31 @@ class MessagingService {
     developer.log('Local notification tapped: ${response.payload}', name: 'MessagingService');
   }
 
-  /// Get FCM token and store in Firestore
-  Future<void> _getAndStoreToken() async {
+  /// Handle auth state changes - store token on login, delete on logout
+  void _onAuthStateChanged(User? user) {
+    if (user != null && _currentToken != null) {
+      // User logged in - store token
+      developer.log('User logged in, storing FCM token', name: 'MessagingService');
+      _storeToken(_currentToken!);
+    } else if (user == null) {
+      // User logged out - delete token from Firestore
+      developer.log('User logged out, deleting FCM token', name: 'MessagingService');
+      _deleteTokenFromFirestore();
+    }
+  }
+
+  /// Get FCM token (without storing)
+  Future<void> _getToken() async {
     try {
       final token = await _messaging.getToken();
       if (token != null) {
         _currentToken = token;
         developer.log('FCM Token: $token', name: 'MessagingService');
-        await _storeToken(token);
+        
+        // If user is already logged in, store immediately
+        if (_auth.currentUser != null) {
+          await _storeToken(token);
+        }
       }
     } catch (e) {
       developer.log('Error getting FCM token: $e', name: 'MessagingService', error: e);
@@ -134,7 +156,11 @@ class MessagingService {
   void _onTokenRefresh(String token) {
     developer.log('FCM Token refreshed: $token', name: 'MessagingService');
     _currentToken = token;
-    _storeToken(token);
+    
+    // Only store if user is logged in
+    if (_auth.currentUser != null) {
+      _storeToken(token);
+    }
   }
 
   /// Store FCM token in Firestore
@@ -257,7 +283,19 @@ class MessagingService {
     developer.log('Data: ${message.data}', name: 'MessagingService');
   }
 
-  /// Delete token (call on logout)
+  /// Delete token from Firestore only (called on logout)
+  Future<void> _deleteTokenFromFirestore() async {
+    if (_currentToken != null) {
+      try {
+        await _firestore.collection('fcmTokens').doc(_currentToken).delete();
+        developer.log('FCM token deleted from Firestore', name: 'MessagingService');
+      } catch (e) {
+        developer.log('Error deleting FCM token from Firestore: $e', name: 'MessagingService', error: e);
+      }
+    }
+  }
+
+  /// Delete token completely (from Firestore and Firebase Messaging)
   Future<void> deleteToken() async {
     if (_currentToken != null) {
       try {
@@ -273,9 +311,9 @@ class MessagingService {
     }
   }
 
-  /// Re-register token after login
-  Future<void> registerTokenForUser() async {
-    await _getAndStoreToken();
+  /// Clean up subscriptions
+  void dispose() {
+    _authSubscription?.cancel();
   }
 
   /// Get current token (for debugging)
