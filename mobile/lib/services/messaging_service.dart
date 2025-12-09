@@ -9,6 +9,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:project_manager_flutter/firebase_options.dart';
+import 'package:project_manager_flutter/services/navigation_service.dart';
 
 /// Handles Firebase Cloud Messaging for push notifications
 class MessagingService {
@@ -277,9 +278,8 @@ class MessagingService {
       name: 'MessagingService',
     );
 
-    // TODO: Implement navigation to project/step
-    // This requires access to NavigatorState or a navigation service
-    // For now, just log the data
+    // Navigate using the NavigationService
+    NavigationService().handleNotificationPayload(data);
   }
 
   /// Log message details for debugging
