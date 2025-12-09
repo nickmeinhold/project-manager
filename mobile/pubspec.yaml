@@ -17,6 +17,9 @@ dependencies:
   cloud_firestore: ^5.5.0
   firebase_messaging: ^15.1.5
 
+  # Local notifications (for foreground FCM)
+  flutter_local_notifications: ^18.0.1
+
   # State management
   provider: ^6.1.2
 

@@ -56,11 +56,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBANDHOmutAE-VYPEWUxqccGfI_ZJkCiLo',
-    appId: '1:695574562874:ios:0cfe936d14e201592a8d03',
+    appId: '1:695574562874:ios:7e22b162040efd332a8d03',
     messagingSenderId: '695574562874',
     projectId: 'project-manager-9ed58',
     storageBucket: 'project-manager-9ed58.firebasestorage.app',
-    iosBundleId: 'com.example.projectManagerFlutter',
+    iosBundleId: 'co.enspyr.ourmealsmobile',
   );
 
   static const FirebaseOptions web = FirebaseOptions(
