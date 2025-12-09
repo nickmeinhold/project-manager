@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { getFirestore } from "firebase-admin/firestore";
 import {
   onDocumentCreated,
   onDocumentUpdated,
@@ -6,7 +7,8 @@ import {
 
 admin.initializeApp();
 
-const db = admin.firestore();
+// Use the named 'default' database (not the '(default)' database)
+const db = getFirestore(admin.app(), "default");
 
 // Project data interface
 interface ProjectData {
