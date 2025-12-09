@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth, signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 const firebaseConfig = {
@@ -14,8 +15,29 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore
-export const db = getFirestore(app);
+// Initialize Firestore with explicit database ID
+export const db = getFirestore(app, 'default');
+
+// Initialize Auth
+export const auth = getAuth(app);
+
+// Sign in helper
+export const signIn = async (email: string, password: string) => {
+  return signInWithEmailAndPassword(auth, email, password);
+};
+
+// Sign out helper
+export const signOut = async () => {
+  return firebaseSignOut(auth);
+};
+
+// Auth state observer
+export const onAuthChange = (callback: (user: User | null) => void) => {
+  return onAuthStateChanged(auth, callback);
+};
+
+// Get current user
+export const getCurrentUser = () => auth.currentUser;
 
 // Initialize Firebase Cloud Messaging (optional, may fail in some environments)
 let messaging: any = null;
