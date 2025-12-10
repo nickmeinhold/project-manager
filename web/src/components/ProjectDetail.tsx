@@ -156,10 +156,21 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack }) => {
                 </button>
               )}
 
-              {step.status === 'completed' && step.completedAt && (
-                <span style={styles.completedTime}>
-                  Completed {step.completedAt.toDate().toLocaleString()}
-                </span>
+              {step.status === 'completed' && (
+                <>
+                  <button
+                    onClick={() => handleStatusChange(step.id, 'pending')}
+                    style={styles.resetButton}
+                    disabled={updatingStepId === step.id}
+                  >
+                    Reset
+                  </button>
+                  {step.completedAt && (
+                    <span style={styles.completedTime}>
+                      Completed {step.completedAt.toDate().toLocaleString()}
+                    </span>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -332,6 +343,16 @@ const styles: { [key: string]: React.CSSProperties } = {
   completedTime: {
     fontSize: '13px',
     color: '#999'
+  },
+  resetButton: {
+    padding: '8px 16px',
+    backgroundColor: 'transparent',
+    color: '#666',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    fontSize: '14px',
+    fontWeight: 500,
+    cursor: 'pointer'
   }
 };
 

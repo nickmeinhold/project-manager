@@ -78,6 +78,11 @@ export const onStepUpdate = onDocumentUpdated(
     if (before.status !== "completed" && after.status === "completed") {
       await handleStepCompletion(projectId, stepId, after, projectData.userId);
     }
+
+    // Check if step was reset (changed FROM completed to something else)
+    if (before.status === "completed" && after.status !== "completed") {
+      await recalculateProjectProgress(projectId);
+    }
   }
 );
 
@@ -238,6 +243,45 @@ async function simulateAutomation(
     success: false,
     result: "This task requires manual intervention.",
   };
+}
+
+// Recalculate project progress (used when steps are reset)
+async function recalculateProjectProgress(projectId: string) {
+  console.log(`Recalculating progress for project ${projectId}`);
+
+  // Get all steps for this project
+  const stepsSnapshot = await db
+    .collection("projects")
+    .doc(projectId)
+    .collection("steps")
+    .orderBy("order", "asc")
+    .get();
+
+  const steps = stepsSnapshot.docs.map(
+    (doc) =>
+      ({
+        id: doc.id,
+        ...doc.data(),
+      } as StepData)
+  );
+
+  const completedStepsCount = steps.filter(
+    (s) => s.status === "completed"
+  ).length;
+
+  // Update project progress
+  await db
+    .collection("projects")
+    .doc(projectId)
+    .update({
+      currentStepIndex: completedStepsCount,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      status: completedStepsCount === steps.length ? "completed" : "active",
+    });
+
+  console.log(
+    `Project ${projectId} progress updated: ${completedStepsCount}/${steps.length} steps completed`
+  );
 }
 
 // Handle step completion

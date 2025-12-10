@@ -537,6 +537,66 @@ describe("Firebase Functions", () => {
         })
       );
     });
+
+    it("should recalculate project progress when step is reset from completed to pending", async () => {
+      // Mock steps after reset - all pending now
+      mockOrderBy.mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          docs: [
+            {
+              id: "step-1",
+              data: () => ({
+                id: "step-1",
+                title: "First Step",
+                status: "pending", // Was completed, now reset
+                order: 0,
+              }),
+            },
+            {
+              id: "step-2",
+              data: () => ({
+                id: "step-2",
+                title: "Second Step",
+                status: "pending",
+                order: 1,
+              }),
+            },
+          ],
+        }),
+      });
+
+      const event = {
+        params: { projectId: "project-123", stepId: "step-1" },
+        data: {
+          before: {
+            data: () => ({
+              id: "step-1",
+              title: "First Step",
+              status: "completed", // Was completed
+              order: 0,
+            }),
+          },
+          after: {
+            data: () => ({
+              id: "step-1",
+              title: "First Step",
+              status: "pending", // Now reset to pending
+              order: 0,
+            }),
+          },
+        },
+      };
+
+      await capturedStepUpdateHandler(event);
+
+      // Should update project with recalculated currentStepIndex (0 completed steps)
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          currentStepIndex: 0,
+          status: "active",
+        })
+      );
+    });
   });
 
   describe("onStepCreate", () => {

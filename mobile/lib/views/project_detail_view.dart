@@ -420,7 +420,13 @@ class StepCard extends StatelessWidget {
         );
 
       case model.StepStatus.completed:
-        return const SizedBox.shrink();
+        return OutlinedButton(
+          onPressed: () => onStatusChange(model.StepStatus.pending),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.grey[600],
+          ),
+          child: const Text('Reset'),
+        );
     }
   }
 }
