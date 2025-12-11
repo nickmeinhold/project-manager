@@ -11,6 +11,12 @@ jest.mock("firebase-admin", () => {
   const mockBatchDelete = jest.fn();
   const mockBatchCommit = jest.fn().mockResolvedValue({});
 
+  const mockCount = jest.fn().mockReturnValue({
+    get: jest.fn().mockResolvedValue({
+      data: () => ({ count: 100 }),
+    }),
+  });
+
   const mockCollection = jest.fn().mockReturnValue({
     add: mockAdd,
     doc: jest.fn().mockImplementation((docId: string) => ({
@@ -25,6 +31,7 @@ jest.mock("firebase-admin", () => {
       }),
     })),
     where: mockWhere,
+    count: mockCount,
   });
 
   const mockDb = {
