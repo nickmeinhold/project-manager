@@ -28,6 +28,15 @@ class FirebaseService {
         .map((snapshot) => snapshot.docs.map((doc) => Project.fromFirestore(doc)).toList());
   }
 
+  /// Fetch a single project by ID
+  Future<Project?> getProject(String projectId) async {
+    final doc = await _firestore.collection('projects').doc(projectId).get();
+    if (!doc.exists) {
+      return null;
+    }
+    return Project.fromFirestore(doc);
+  }
+
   Stream<List<model.Step>> getSteps(String projectId) {
     return _firestore
         .collection('projects')
