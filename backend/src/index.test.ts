@@ -7,24 +7,32 @@ jest.mock("firebase-admin", () => {
   const mockGet = jest.fn();
   const mockWhere = jest.fn();
   const mockOrderBy = jest.fn();
+  const mockDelete = jest.fn().mockResolvedValue({});
+  const mockBatchDelete = jest.fn();
+  const mockBatchCommit = jest.fn().mockResolvedValue({});
 
   const mockCollection = jest.fn().mockReturnValue({
     add: mockAdd,
-    doc: jest.fn().mockReturnValue({
+    doc: jest.fn().mockImplementation((docId: string) => ({
       get: mockGet,
       update: mockUpdate,
+      delete: mockDelete,
       collection: jest.fn().mockReturnValue({
         doc: jest.fn().mockReturnValue({
           update: mockUpdate,
         }),
         orderBy: mockOrderBy,
       }),
-    }),
+    })),
     where: mockWhere,
   });
 
   const mockDb = {
     collection: mockCollection,
+    batch: jest.fn().mockReturnValue({
+      delete: mockBatchDelete,
+      commit: mockBatchCommit,
+    }),
   };
 
   return {
@@ -36,6 +44,10 @@ jest.mock("firebase-admin", () => {
       },
       Timestamp: {
         now: jest.fn().mockReturnValue({ toDate: () => new Date() }),
+        fromDate: jest.fn().mockImplementation((date: Date) => ({
+          toDate: () => date,
+          seconds: Math.floor(date.getTime() / 1000),
+        })),
       },
     },
     messaging: jest.fn().mockReturnValue({
@@ -52,6 +64,9 @@ jest.mock("firebase-admin", () => {
     __mockUpdate: mockUpdate,
     __mockOrderBy: mockOrderBy,
     __mockCollection: mockCollection,
+    __mockDelete: mockDelete,
+    __mockBatchDelete: mockBatchDelete,
+    __mockBatchCommit: mockBatchCommit,
   };
 });
 
@@ -64,22 +79,31 @@ jest.mock("firebase-admin/firestore", () => ({
 // Mock firebase-functions to capture the handlers
 const mockOnDocumentCreated = jest.fn();
 const mockOnDocumentUpdated = jest.fn();
+const mockOnSchedule = jest.fn();
 
 jest.mock("firebase-functions/v2/firestore", () => ({
   onDocumentCreated: mockOnDocumentCreated,
   onDocumentUpdated: mockOnDocumentUpdated,
 }));
 
+jest.mock("firebase-functions/v2/scheduler", () => ({
+  onSchedule: mockOnSchedule,
+}));
+
 describe("Firebase Functions", () => {
   let capturedProjectCreateHandler: Function;
   let capturedStepCreateHandler: Function;
   let capturedStepUpdateHandler: Function;
+  let capturedCleanupHandler: Function;
   let mockAdd: jest.Mock;
   let mockGet: jest.Mock;
   let mockWhere: jest.Mock;
   let mockUpdate: jest.Mock;
   let mockOrderBy: jest.Mock;
   let mockSendEachForMulticast: jest.Mock;
+  let mockDelete: jest.Mock;
+  let mockBatchDelete: jest.Mock;
+  let mockBatchCommit: jest.Mock;
 
   beforeAll(() => {
     // Capture the handlers when the module is imported
@@ -97,6 +121,10 @@ describe("Firebase Functions", () => {
       }
       return handler;
     });
+    mockOnSchedule.mockImplementation((_config, handler) => {
+      capturedCleanupHandler = handler;
+      return handler;
+    });
 
     // Import the module to register handlers
     require("./index");
@@ -110,6 +138,9 @@ describe("Firebase Functions", () => {
     mockUpdate = (admin as any).__mockUpdate;
     mockOrderBy = (admin as any).__mockOrderBy;
     mockSendEachForMulticast = admin.messaging().sendEachForMulticast as jest.Mock;
+    mockDelete = (admin as any).__mockDelete;
+    mockBatchDelete = (admin as any).__mockBatchDelete;
+    mockBatchCommit = (admin as any).__mockBatchCommit;
 
     // Default mock for FCM tokens query (empty)
     mockWhere.mockReturnValue({
@@ -781,6 +812,203 @@ describe("Firebase Functions", () => {
       await capturedProjectCreateHandler(event);
 
       expect(mockSendEachForMulticast).not.toHaveBeenCalled();
+    });
+
+    it("should delete invalid tokens when FCM returns registration-token-not-registered error", async () => {
+      // Mock FCM tokens exist for user
+      mockWhere.mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          empty: false,
+          docs: [
+            { data: () => ({ token: "valid-token", userId: "user-456" }) },
+            { data: () => ({ token: "invalid-token", userId: "user-456" }) },
+          ],
+        }),
+      });
+
+      // Mock FCM response with one failure
+      mockSendEachForMulticast.mockResolvedValue({
+        successCount: 1,
+        failureCount: 1,
+        responses: [
+          { success: true },
+          {
+            success: false,
+            error: { code: "messaging/registration-token-not-registered" },
+          },
+        ],
+      });
+
+      const projectData = {
+        id: "project-123",
+        userId: "user-456",
+        title: "Test Project",
+        status: "active",
+        currentStepIndex: 0,
+      };
+
+      const event = {
+        params: { projectId: "project-123" },
+        data: {
+          data: () => projectData,
+        },
+      };
+
+      await capturedProjectCreateHandler(event);
+
+      // Verify the invalid token was deleted
+      expect(mockDelete).toHaveBeenCalled();
+    });
+
+    it("should delete invalid tokens when FCM returns invalid-registration-token error", async () => {
+      // Mock FCM tokens exist for user
+      mockWhere.mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          empty: false,
+          docs: [
+            { data: () => ({ token: "invalid-token-1", userId: "user-456" }) },
+          ],
+        }),
+      });
+
+      // Mock FCM response with failure
+      mockSendEachForMulticast.mockResolvedValue({
+        successCount: 0,
+        failureCount: 1,
+        responses: [
+          {
+            success: false,
+            error: { code: "messaging/invalid-registration-token" },
+          },
+        ],
+      });
+
+      const projectData = {
+        id: "project-123",
+        userId: "user-456",
+        title: "Test Project",
+        status: "active",
+        currentStepIndex: 0,
+      };
+
+      const event = {
+        params: { projectId: "project-123" },
+        data: {
+          data: () => projectData,
+        },
+      };
+
+      await capturedProjectCreateHandler(event);
+
+      // Verify the invalid token was deleted
+      expect(mockDelete).toHaveBeenCalled();
+    });
+
+    it("should not delete tokens for other FCM errors", async () => {
+      // Mock FCM tokens exist for user
+      mockWhere.mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          empty: false,
+          docs: [{ data: () => ({ token: "token-1", userId: "user-456" }) }],
+        }),
+      });
+
+      // Mock FCM response with a different error (e.g., quota exceeded)
+      mockSendEachForMulticast.mockResolvedValue({
+        successCount: 0,
+        failureCount: 1,
+        responses: [
+          {
+            success: false,
+            error: { code: "messaging/quota-exceeded" },
+          },
+        ],
+      });
+
+      const projectData = {
+        id: "project-123",
+        userId: "user-456",
+        title: "Test Project",
+        status: "active",
+        currentStepIndex: 0,
+      };
+
+      const event = {
+        params: { projectId: "project-123" },
+        data: {
+          data: () => projectData,
+        },
+      };
+
+      await capturedProjectCreateHandler(event);
+
+      // Verify no tokens were deleted
+      expect(mockDelete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("cleanupStaleFcmTokens", () => {
+    it("should delete tokens older than 30 days", async () => {
+      const oldDate = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000); // 31 days ago
+      const mockRef1 = { id: "stale-token-1" };
+      const mockRef2 = { id: "stale-token-2" };
+
+      mockWhere.mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          empty: false,
+          size: 2,
+          docs: [
+            { ref: mockRef1, data: () => ({ token: "stale-token-1", updatedAt: { toDate: () => oldDate } }) },
+            { ref: mockRef2, data: () => ({ token: "stale-token-2", updatedAt: { toDate: () => oldDate } }) },
+          ],
+        }),
+      });
+
+      await capturedCleanupHandler();
+
+      // Verify batch delete was called for stale tokens
+      expect(mockBatchDelete).toHaveBeenCalledTimes(2);
+      expect(mockBatchCommit).toHaveBeenCalled();
+    });
+
+    it("should not delete any tokens when none are stale", async () => {
+      mockWhere.mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          empty: true,
+          size: 0,
+          docs: [],
+        }),
+      });
+
+      await capturedCleanupHandler();
+
+      // Verify no batch operations were performed
+      expect(mockBatchDelete).not.toHaveBeenCalled();
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+
+    it("should handle large batches of stale tokens", async () => {
+      const oldDate = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000);
+
+      // Create 600 stale tokens (should be processed in 2 batches of 500)
+      const staleDocs = Array.from({ length: 600 }, (_, i) => ({
+        ref: { id: `stale-token-${i}` },
+        data: () => ({ token: `stale-token-${i}`, updatedAt: { toDate: () => oldDate } }),
+      }));
+
+      mockWhere.mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          empty: false,
+          size: 600,
+          docs: staleDocs,
+        }),
+      });
+
+      await capturedCleanupHandler();
+
+      // Verify batch operations were performed (2 batches: 500 + 100)
+      expect(mockBatchDelete).toHaveBeenCalledTimes(600);
+      expect(mockBatchCommit).toHaveBeenCalledTimes(2);
     });
   });
 });
