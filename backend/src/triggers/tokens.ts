@@ -33,6 +33,9 @@ export const cleanupStaleFcmTokens = onSchedule(
         return;
       }
 
+      const totalTokens = await db.collection("fcmTokens").count().get();
+      console.log(`Total FCM tokens in database: ${totalTokens.data().count}`);
+
       console.log(`Found ${staleTokensSnapshot.size} stale FCM tokens`);
 
       // Delete in batches of 500 (Firestore batch limit)
@@ -49,7 +52,9 @@ export const cleanupStaleFcmTokens = onSchedule(
 
         await batch.commit();
         console.log(
-          `Deleted batch ${Math.floor(i / batchSize) + 1}: ${chunk.length} tokens`
+          `Deleted batch ${Math.floor(i / batchSize) + 1}: ${
+            chunk.length
+          } tokens`
         );
       }
 

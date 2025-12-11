@@ -67,7 +67,8 @@ export async function sendNotification(
             // https://firebase.google.com/docs/cloud-messaging/manage-tokens
             if (
               errorCode === "messaging/registration-token-not-registered" ||
-              errorCode === "messaging/invalid-registration-token"
+              errorCode === "messaging/invalid-registration-token" ||
+              errorCode === "messaging/invalid-argument"
             ) {
               tokensToDelete.push(tokens[idx]);
             }
@@ -76,7 +77,9 @@ export async function sendNotification(
 
         // Delete invalid tokens from Firestore
         if (tokensToDelete.length > 0) {
-          console.log(`🗑️ Deleting ${tokensToDelete.length} invalid FCM tokens`);
+          console.log(
+            `🗑️ Deleting ${tokensToDelete.length} invalid FCM tokens`
+          );
           const deletePromises = tokensToDelete.map((token) =>
             db.collection("fcmTokens").doc(token).delete()
           );
