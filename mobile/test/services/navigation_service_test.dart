@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:project_manager_flutter/services/navigation_service.dart';
 
 void main() {
+  // Required for tests that access navigatorKey.currentState
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late NavigationService navigationService;
 
   setUp(() {
@@ -162,6 +165,67 @@ void main() {
           // Extra fields should not be in params
           expect(destination.params.containsKey('extraField'), isFalse);
         });
+      });
+    });
+
+    group('pending navigation (cold start)', () {
+      test('hasPendingNavigation is false initially', () {
+        // Clear any pending from previous tests
+        navigationService.consumePendingNavigation();
+
+        expect(navigationService.hasPendingNavigation, isFalse);
+      });
+
+      test('consumePendingNavigation returns null when none pending', () {
+        // Clear any pending from previous tests
+        navigationService.consumePendingNavigation();
+
+        final pending = navigationService.consumePendingNavigation();
+        expect(pending, isNull);
+      });
+
+      test('handleNotificationPayload queues navigation when navigator not ready', () async {
+        // Clear any pending from previous tests
+        navigationService.consumePendingNavigation();
+
+        // Since navigatorKey.currentState is null (no MaterialApp mounted),
+        // the navigation should be queued
+        final result = await navigationService.handleNotificationPayload({
+          'projectId': 'cold-start-project',
+          'type': 'step_completed',
+        });
+
+        expect(result, isFalse); // Returns false because navigation was queued
+        expect(navigationService.hasPendingNavigation, isTrue);
+
+        // Consume and verify the pending navigation
+        final pending = navigationService.consumePendingNavigation();
+        expect(pending, isNotNull);
+        expect(pending!.route, equals(Routes.projectDetail));
+        expect(pending.params['projectId'], equals('cold-start-project'));
+
+        // After consuming, should be empty
+        expect(navigationService.hasPendingNavigation, isFalse);
+      });
+
+      test('consumePendingNavigation clears the pending navigation', () async {
+        // Clear any pending from previous tests
+        navigationService.consumePendingNavigation();
+
+        await navigationService.handleNotificationPayload({
+          'projectId': 'test-project',
+          'type': 'project_created',
+        });
+
+        expect(navigationService.hasPendingNavigation, isTrue);
+
+        // First consume returns the destination
+        final first = navigationService.consumePendingNavigation();
+        expect(first, isNotNull);
+
+        // Second consume returns null
+        final second = navigationService.consumePendingNavigation();
+        expect(second, isNull);
       });
     });
 

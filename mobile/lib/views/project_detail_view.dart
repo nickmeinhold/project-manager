@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../models/project.dart';
 import '../models/step.dart' as model;
 import '../services/firebase_service.dart';
 
 class ProjectDetailView extends StatefulWidget {
   final Project project;
+  final String? initialStepId;
 
-  const ProjectDetailView({super.key, required this.project});
+  const ProjectDetailView({super.key, required this.project, this.initialStepId});
 
   @override
   State<ProjectDetailView> createState() => _ProjectDetailViewState();
@@ -15,7 +17,42 @@ class ProjectDetailView extends StatefulWidget {
 
 class _ProjectDetailViewState extends State<ProjectDetailView> {
   final FirebaseService _firebaseService = FirebaseService();
+  final Map<String, GlobalKey> _stepKeys = {};
   String? _updatingStepId;
+  String? _highlightedStepId;
+  bool _hasScrolledToInitialStep = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _highlightedStepId = widget.initialStepId;
+    // Clear highlight after a delay
+    if (_highlightedStepId != null) {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _highlightedStepId = null;
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  void _scrollToStep(String stepId) {
+    final key = _stepKeys[stepId];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   Color _getStatusColor() {
     switch (widget.project.status) {
@@ -41,9 +78,9 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating step: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating step: $e')));
       }
     } finally {
       if (mounted) {
@@ -57,9 +94,7 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Project Details'),
-      ),
+      appBar: AppBar(title: const Text('Project Details')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -78,10 +113,7 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
                         Expanded(
                           child: Text(
                             widget.project.title,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                           ),
                         ),
                         Container(
@@ -104,10 +136,7 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
                     const SizedBox(height: 12),
                     Text(
                       widget.project.description,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -147,23 +176,14 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
                     const SizedBox(height: 8),
                     Text(
                       widget.project.progressText,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Steps',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            const Text('Steps', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             StreamBuilder<List<model.Step>>(
               stream: _firebaseService.getSteps(widget.project.id),
@@ -185,18 +205,30 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
 
                 if (steps.isEmpty) {
                   return const Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Loading steps...'),
-                    ),
+                    child: Padding(padding: EdgeInsets.all(16), child: Text('Loading steps...')),
                   );
+                }
+
+                // Scroll to initial step after first load
+                if (!_hasScrolledToInitialStep && widget.initialStepId != null) {
+                  _hasScrolledToInitialStep = true;
+                  // Ensure keys are created first
+                  for (final step in steps) {
+                    _stepKeys[step.id] ??= GlobalKey();
+                  }
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scrollToStep(widget.initialStepId!);
+                  });
                 }
 
                 return Column(
                   children: steps.map((step) {
+                    _stepKeys[step.id] ??= GlobalKey();
                     return StepCard(
+                      key: _stepKeys[step.id],
                       step: step,
                       isUpdating: _updatingStepId == step.id,
+                      isHighlighted: _highlightedStepId == step.id,
                       onStatusChange: (newStatus) => _updateStepStatus(step.id, newStatus),
                     );
                   }).toList(),
@@ -213,12 +245,14 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
 class StepCard extends StatelessWidget {
   final model.Step step;
   final bool isUpdating;
+  final bool isHighlighted;
   final Function(model.StepStatus) onStatusChange;
 
   const StepCard({
     super.key,
     required this.step,
     required this.isUpdating,
+    this.isHighlighted = false,
     required this.onStatusChange,
   });
 
@@ -226,8 +260,13 @@ class StepCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: isHighlighted ? 4 : 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isHighlighted
+            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
+            : BorderSide.none,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -251,10 +290,7 @@ class StepCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         step.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -277,13 +313,7 @@ class StepCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              step.description,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
+            Text(step.description, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -295,18 +325,11 @@ class StepCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   step.automatable ? 'Automatable' : 'Manual',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
                 if (step.automationAttempted) ...[
                   const SizedBox(width: 16),
-                  Icon(
-                    Icons.check_circle,
-                    size: 16,
-                    color: Colors.blue[600],
-                  ),
+                  Icon(Icons.check_circle, size: 16, color: Colors.blue[600]),
                   const SizedBox(width: 6),
                   Text(
                     'Automation Attempted',
@@ -332,16 +355,10 @@ class StepCard extends StatelessWidget {
                   children: [
                     const Text(
                       'Result: ',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     Expanded(
-                      child: Text(
-                        step.automationResult!,
-                        style: const TextStyle(fontSize: 13),
-                      ),
+                      child: Text(step.automationResult!, style: const TextStyle(fontSize: 13)),
                     ),
                   ],
                 ),
@@ -351,10 +368,7 @@ class StepCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'Completed ${DateFormat.yMMMd().add_jm().format(step.completedAt!.toDate())}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),
             ],
             if (!isUpdating) ...[
