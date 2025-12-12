@@ -89,6 +89,6 @@ class _ProjectDetailWrapperState extends State<ProjectDetailWrapper> {
       );
     }
 
-    return ProjectDetailView(project: _project!);
+    return ProjectDetailView(project: _project!, initialStepId: widget.stepId);
   }
 }

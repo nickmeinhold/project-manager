@@ -6,8 +6,13 @@ import '../services/firebase_service.dart';
 
 class ProjectDetailView extends StatefulWidget {
   final Project project;
+  final String? initialStepId;
 
-  const ProjectDetailView({super.key, required this.project});
+  const ProjectDetailView({
+    super.key,
+    required this.project,
+    this.initialStepId,
+  });
 
   @override
   State<ProjectDetailView> createState() => _ProjectDetailViewState();
@@ -15,7 +20,44 @@ class ProjectDetailView extends StatefulWidget {
 
 class _ProjectDetailViewState extends State<ProjectDetailView> {
   final FirebaseService _firebaseService = FirebaseService();
+  final ScrollController _scrollController = ScrollController();
+  final Map<String, GlobalKey> _stepKeys = {};
   String? _updatingStepId;
+  String? _highlightedStepId;
+  bool _hasScrolledToInitialStep = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _highlightedStepId = widget.initialStepId;
+    // Clear highlight after a delay
+    if (_highlightedStepId != null) {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _highlightedStepId = null;
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToStep(String stepId) {
+    final key = _stepKeys[stepId];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   Color _getStatusColor() {
     switch (widget.project.status) {
@@ -192,11 +234,26 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
                   );
                 }
 
+                // Scroll to initial step after first load
+                if (!_hasScrolledToInitialStep && widget.initialStepId != null) {
+                  _hasScrolledToInitialStep = true;
+                  // Ensure keys are created first
+                  for (final step in steps) {
+                    _stepKeys[step.id] ??= GlobalKey();
+                  }
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scrollToStep(widget.initialStepId!);
+                  });
+                }
+
                 return Column(
                   children: steps.map((step) {
+                    _stepKeys[step.id] ??= GlobalKey();
                     return StepCard(
+                      key: _stepKeys[step.id],
                       step: step,
                       isUpdating: _updatingStepId == step.id,
+                      isHighlighted: _highlightedStepId == step.id,
                       onStatusChange: (newStatus) => _updateStepStatus(step.id, newStatus),
                     );
                   }).toList(),
@@ -213,12 +270,14 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
 class StepCard extends StatelessWidget {
   final model.Step step;
   final bool isUpdating;
+  final bool isHighlighted;
   final Function(model.StepStatus) onStatusChange;
 
   const StepCard({
     super.key,
     required this.step,
     required this.isUpdating,
+    this.isHighlighted = false,
     required this.onStatusChange,
   });
 
@@ -226,8 +285,13 @@ class StepCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: isHighlighted ? 4 : 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isHighlighted
+            ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)
+            : BorderSide.none,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

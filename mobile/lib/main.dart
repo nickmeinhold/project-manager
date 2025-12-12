@@ -21,8 +21,30 @@ void main() async {
   runApp(const ProjectManagerApp());
 }
 
-class ProjectManagerApp extends StatelessWidget {
+class ProjectManagerApp extends StatefulWidget {
   const ProjectManagerApp({super.key});
+
+  @override
+  State<ProjectManagerApp> createState() => _ProjectManagerAppState();
+}
+
+class _ProjectManagerAppState extends State<ProjectManagerApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Process any pending navigation from cold start after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _processPendingNavigation();
+    });
+  }
+
+  void _processPendingNavigation() {
+    final navigationService = NavigationService();
+    final pending = navigationService.consumePendingNavigation();
+    if (pending != null) {
+      navigationService.navigateTo(pending);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

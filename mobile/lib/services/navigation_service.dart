@@ -59,6 +59,19 @@ class NavigationService {
   /// Global navigator key for navigation without context
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+  /// Pending navigation destination for cold start scenarios
+  NavigationDestination? _pendingNavigation;
+
+  /// Get and clear any pending navigation (used after app is ready)
+  NavigationDestination? consumePendingNavigation() {
+    final pending = _pendingNavigation;
+    _pendingNavigation = null;
+    return pending;
+  }
+
+  /// Check if there's a pending navigation
+  bool get hasPendingNavigation => _pendingNavigation != null;
+
   /// Parse a notification payload and return the appropriate destination
   ///
   /// Returns null if the payload doesn't contain enough info to navigate
@@ -139,9 +152,18 @@ class NavigationService {
   }
 
   /// Convenience method to handle a notification payload directly
+  ///
+  /// If navigator is not ready (cold start), queues the navigation for later
   Future<bool> handleNotificationPayload(Map<String, dynamic> payload) async {
     final destination = getDestinationForPayload(payload);
     if (destination == null) return false;
+
+    // If navigator isn't ready, queue for later
+    if (navigatorKey.currentState == null) {
+      _pendingNavigation = destination;
+      return false;
+    }
+
     return navigateTo(destination);
   }
 }
